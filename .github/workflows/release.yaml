@@ -60,7 +60,7 @@ jobs:
             build/*
           generate_release_notes: true
           body: |
-            Image available at: ${{ env.repo }}:${{ github.ref_name }}
+            Image available at: ${{ env.REPO }}:${{ github.ref_name }}
       - name: Summary
         run: |
           echo "## Summary" >> $GITHUB_STEP_SUMMARY
