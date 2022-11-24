@@ -7,7 +7,6 @@ IMAGE=${REPO}:${GIT_TAG}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUDO?=sudo
 FRAMEWORK_PACKAGES?=meta/cos-light
-CLOUD_CONFIG_FILE?="iso/config"
 MANIFEST_FILE?="iso/manifest.yaml"
 # This are the default images already in the dockerfile but we want to be able to override them
 OPERATOR_IMAGE?=quay.io/costoolkit/elemental-operator-ci:latest
@@ -68,7 +67,6 @@ endif
 		--build-arg OS_IMAGE=${REPO}:${FINAL_TAG} \
 		--build-arg TOOL_IMAGE=${TOOL_IMAGE} \
 		--build-arg ELEMENTAL_VERSION=${FINAL_TAG} \
-		--build-arg CLOUD_CONFIG_FILE=${CLOUD_CONFIG_FILE} \
 		--build-arg MANIFEST_FILE=${MANIFEST_FILE} \
 		-t iso:${FINAL_TAG} .
 	@DOCKER_BUILDKIT=1 docker run --rm -v $(PWD)/build:/mnt \
@@ -77,15 +75,12 @@ endif
 		--debug build-iso \
 		-o /mnt \
 		-n elemental-${FINAL_TAG} \
-		--overlay-iso overlay dir:rootfs
+		dir:rootfs
 	@echo "INFO: ISO available at build/elemental-${FINAL_TAG}.iso"
 
 # Build an iso with the OBS base containers
 .PHONY: remote_iso
 proper_iso:
-ifeq ($(CLOUD_CONFIG_FILE),"iso/config")
-	@echo "No CLOUD_CONFIG_FILE set, using the default one at ${CLOUD_CONFIG_FILE}"
-endif
 ifeq ($(MANIFEST_FILE),"iso/manifest.yaml")
 	@echo "No MANIFEST_FILE set, using the default one at ${MANIFEST_FILE}"
 else
@@ -94,7 +89,6 @@ endif
 	@mkdir -p build
 	@DOCKER_BUILDKIT=1 docker build -f Dockerfile.iso \
 		--target default \
-		--build-arg CLOUD_CONFIG_FILE=${CLOUD_CONFIG_FILE} \
 		--build-arg MANIFEST_FILE=${MANIFEST_FILE} \
 		-t iso:latest .
 	@DOCKER_BUILDKIT=1 docker run --rm -v $(PWD)/build:/mnt \

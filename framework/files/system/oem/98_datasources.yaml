@@ -1,0 +1,8 @@
+name: "Datasources"
+stages:
+  network.after:
+    - name: "Pull data from provider"
+      if: '[[ -f /run/cos/live_mode ]]'
+      datasource:
+        providers: ["aws", "gcp", "openstack", "cdrom"]
+        path: "/oem/initial-configuration/"

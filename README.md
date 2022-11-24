@@ -1,3 +1,9 @@
+# Elemental teal - Lestrade edition
+
+POC: This uses the initial registration being passed by the user-data datasource.
+So instead of injecting the iso, this is a generic iso that you can launch, pass the registration config as userdata and will register using that.
+
+
 # Elemental
 [![Elemental End-To-End tests with Rancher Manager](https://github.com/rancher/elemental/actions/workflows/e2e.yaml/badge.svg?branch=main)](https://github.com/rancher/elemental/actions/workflows/e2e.yaml)
 

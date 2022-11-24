@@ -7,9 +7,7 @@ FROM $TOOL_IMAGE as tools
 FROM tools AS default
 WORKDIR /iso
 COPY --from=os / rootfs
-ARG CLOUD_CONFIG_FILE=iso/config
 ARG MANIFEST_FILE=iso/manifest.yaml
-COPY $CLOUD_CONFIG_FILE overlay/livecd-cloud-config.yaml
 COPY $MANIFEST_FILE /iso/manifest.yaml
 ARG ELEMENTAL_VERSION=""
 RUN echo $ELEMENTAL_VERSION
