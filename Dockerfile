@@ -1,10 +1,16 @@
-# ARGS go first if used on FROM
 ARG OPERATOR_IMAGE=quay.io/costoolkit/elemental-operator-ci:latest
 ARG REGISTER_IMAGE=quay.io/costoolkit/elemental-register-ci:latest
 ARG SYSTEM_AGENT_IMAGE=rancher/system-agent:v0.2.9
 ARG TOOL_IMAGE=quay.io/costoolkit/elemental-cli-ci:latest
-# Binaries and files needed from elemental-toolkit repository
 ARG LUET_VERSION=0.32.5
+
+FROM $TOOL_IMAGE as elemental-cli
+FROM $OPERATOR_IMAGE as elemental-operator
+FROM $REGISTER_IMAGE as elemental-register
+FROM $SYSTEM_AGENT_IMAGE as system-agent
+
+
+# Install luet packages framework
 FROM quay.io/luet/base:$LUET_VERSION AS framework-build
 COPY framework/files/etc/luet/luet.yaml /etc/luet/luet.yaml
 ENV LUET_NOLOCK=true
@@ -27,21 +33,8 @@ RUN utils/nerdctl
 RUN toolchain/cosign
 RUN selinux/rancher
 
-# elemental-operator
-FROM $OPERATOR_IMAGE as elemental-operator
-
-# elemental-register
-FROM $REGISTER_IMAGE as elemental-register
-
-# rancher-system-agent
-FROM $SYSTEM_AGENT_IMAGE as system-agent
-
-FROM $TOOL_IMAGE as elemental-cli
-
-
-# Base os
-FROM registry.suse.com/suse/sle-micro-rancher/5.3:latest as default
-
+# Create base os
+FROM registry.suse.com/suse/sle-micro-rancher/5.3:latest as baseos
 # Copy installed files from the luet repos
 COPY --from=framework-build /framework /
 # Copy elemental-operator
@@ -59,7 +52,7 @@ COPY --from=elemental-cli /usr/bin/elemental /usr/bin/elemental
 COPY framework/files/ /
 
 # Enable services
-RUN systemctl enable NetworkManager sshd elemental-populate-node-labels 
+RUN systemctl enable NetworkManager sshd elemental-populate-node-labels
 
 ARG IMAGE_TAG=latest
 ARG IMAGE_COMMIT=""
@@ -69,7 +62,7 @@ RUN echo IMAGE_REPO=\"${IMAGE_REPO}\" >> /etc/os-release
 RUN echo IMAGE_TAG=\"${IMAGE_TAG}\" >> /etc/os-release
 RUN echo IMAGE=\"${IMAGE_REPO}:${IMAGE_TAG}\" >> /etc/os-release
 RUN echo TIMESTAMP="`date +'%Y%m%d%H%M%S'`" >> /etc/os-release
-RUN echo GRUB_ENTRY_NAME=\"Elemental\" >> /etc/os-release
+RUN echo GRUB_ENTRY_NAME=\"Lestrade\" >> /etc/os-release
 
 # Rebuild initrd to setup dracut with the boot configurations
 RUN mkinitrd && \
@@ -81,3 +74,12 @@ RUN mkinitrd && \
 RUN rm -rf /var/log/update* && \
     >/var/log/lastlog && \
     rm -rf /boot/vmlinux*
+
+# Create isobuilder image, ready to run and generate an iso
+FROM elemental-cli AS default
+WORKDIR /iso
+COPY --from=baseos / rootfs
+COPY iso/manifest.yaml /iso/manifest.yaml
+ARG ELEMENTAL_VERSION=""
+RUN echo $ELEMENTAL_VERSION
+ENTRYPOINT ["/usr/bin/elemental"]

@@ -6,26 +6,67 @@ on:
       - 'v*'
 jobs:
   build:
+    env:
+      OPERATOR_IMAGE: quay.io/costoolkit/elemental-operator:v0.6.3
+      REGISTER_IMAGE: quay.io/costoolkit/elemental-register:v0.6.3
+      TOOL_IMAGE: quay.io/costoolkit/elemental-cli:v0.1.3
+      SYSTEM_AGENT_IMAGE: rancher/system-agent:v0.2.9
+      REPO: quay.io/itxaka/lestrade
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Build Artifacts
         run: |
-          # Replace default TAG with our tag
-          sed "s/\${TAG:-main}/${{ github.ref_name }}/g" .github/elemental-iso-build
-          mkdir release
-          cp .github/elemental-iso-build release/elemental-iso-build
-          chmod +x release/elemental-iso-build
-      - name: Release
-        uses: rancher-sandbox/github-action-ghr@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GHR_PATH: release/
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHR_PARALLELISM: "1"
-      - name: Release space from worker ♻
-        if: always()
+          make
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Docker meta for tag
+        id: meta
+        uses: docker/metadata-action@v4.1.1
+        with:
+          images: |
+            ${{ env.REPO }}
+          tags: |
+            type=semver,pattern=v{{version}}
+            type=raw,value=latest
+      - name: Login to Quay
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+      - name: Push image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: baseos
+          build-args: |
+            OPERATOR_IMAGE=${{ env.OPERATOR_IMAGE }}
+            REGISTER_IMAGE=${{ env.REGISTER_IMAGE }}
+            TOOL_IMAGE=${{ env.TOOL_IMAGE }}
+            SYSTEM_AGENT_IMAGE=${{ env.SYSTEM_AGENT_IMAGE }}
+            ELEMENTAL_VERSION=${{ steps.export_tag.outputs.elemental_tag }}
+            ELEMENTAL_COMMIT=${{ github.sha }}
+      - name: GH Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/*
+          generate_release_notes: true
+          body: |
+            Image available at: ${{ env.repo }}:${{ github.ref_name }}
+      - name: Summary
         run: |
-          sudo rm -rf build bin dist || true
-          docker system prune -f -a --volumes || true
+          echo "## Summary" >> $GITHUB_STEP_SUMMARY
+          echo "  - Pushed to repo: ${{ env.REPO }} " >> $GITHUB_STEP_SUMMARY
+          echo "  - Released tag: ${{ github.ref_name }} " >> $GITHUB_STEP_SUMMARY
+          echo "  - Operator: ${{ env.OPERATOR_IMAGE }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - Register: ${{ env.REGISTER_IMAGE }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - Elemental CLI: ${{ env.TOOL_IMAGE }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - System Agent: ${{ env.SYSTEM_AGENT_IMAGE }}" >> $GITHUB_STEP_SUMMARY

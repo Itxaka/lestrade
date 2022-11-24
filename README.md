@@ -1,18 +1,10 @@
-# Elemental teal - Lestrade edition
+# Elemental Lestrade edition
 
 POC: This uses the initial registration being passed by the user-data datasource.
 So instead of injecting the iso, this is a generic iso that you can launch, pass the registration config as userdata and will register using that.
 
-
-# Elemental
-[![Elemental End-To-End tests with Rancher Manager](https://github.com/rancher/elemental/actions/workflows/e2e.yaml/badge.svg?branch=main)](https://github.com/rancher/elemental/actions/workflows/e2e.yaml)
-
-[![Elemental UI End-To-End tests](https://github.com/rancher/elemental/actions/workflows/ui-e2e.yaml/badge.svg?branch=main)](https://github.com/rancher/elemental/actions/workflows/ui-e2e.yaml)
-
-Elemental is a software stack enabling a centralized, full cloud-native OS management solution with Kubernetes.
-
-Cluster Node OSes are built and maintained via container images through the [Elemental Toolkit](https://rancher.github.io/elemental-toolkit/) and installed on new hosts using the [Elemental CLI](https://github.com/rancher/elemental-cli).
-
-The [Elemental Operator](https://github.com/rancher/elemental-operator) and the [Rancher System Agent](https://github.com/rancher/system-agent) enable Rancher Manager to fully control Elemental clusters, from the installation and management of the OS on the Nodes to the provisioning of new K3s or RKE2 clusters in a centralized way.
-
-Follow our [Quickstart](https://rancher.github.io/elemental/quickstart/) or see the [full docs](https://rancher.github.io/elemental/) for more info.
+ - Create the iso (`make`)
+ - Add the raw registration yaml as user data on whatever provider you use
+ - Boot the iso
+ - ?????
+ - profit!11!!
